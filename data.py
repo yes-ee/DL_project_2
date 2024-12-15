@@ -1,5 +1,6 @@
 import os
 import json
+from collections import Counter
 
 def extract_qa_pairs_with_topic(folder_path):
     all_qa_pairs = []  # 모든 질문-응답 쌍과 주제를 저장할 리스트
@@ -44,6 +45,26 @@ def build_vocab(qa_pairs):
     reverse_vocab = {idx: word for word, idx in vocab.items()}
     return vocab, reverse_vocab
 
+def build_vocab_with_frequency(qa_pairs, min_freq=3, max_vocab_size=20000):
+    # 기본 특수 토큰
+    vocab = {"<PAD>": 0, "<SOS>": 1, "<EOS>": 2, "<UNK>": 3}
+    idx = 4
+    word_counter = Counter()
+
+    # 단어 빈도 계산
+    for q, a in qa_pairs:
+        for sentence in [q, a]:
+            word_counter.update(sentence.split())
+
+    # 빈도 기준과 최대 크기 기준으로 단어 추가
+    for word, count in word_counter.most_common(max_vocab_size - len(vocab)):
+        if count >= min_freq:
+            vocab[word] = idx
+            idx += 1
+
+    reverse_vocab = {idx: word for word, idx in vocab.items()}
+    return vocab, reverse_vocab
+
 def encode_sentence(sentence, vocab):
     return [vocab["<SOS>"]] + [vocab[word] for word in sentence.split() if word in vocab] + [vocab["<EOS>"]]
 
@@ -57,8 +78,12 @@ print(f"총 {len(qa_pairs)}개의 질문-응답 쌍을 추출했습니다.")
 print("샘플 데이터:", qa_pairs[:3])  # 일부 샘플 출력
 
 # 단어 사전 생성
-vocab, reverse_vocab = build_vocab([(item["question"], item["answer"]) for item in qa_pairs])
-print("단어 사전 크기:", len(vocab))
+# vocab, reverse_vocab = build_vocab([(item["question"], item["answer"]) for item in qa_pairs])
+# print("단어 사전 크기:", len(vocab))
+
+# 빈도 기반 단어 사전 생성
+vocab, reverse_vocab = build_vocab_with_frequency([(item["question"], item["answer"]) for item in qa_pairs])
+print("빈도 기반 단어 사전 크기:", len(vocab))
 
 # 샘플 정수 인코딩
 encoded_sample = encode_sentence(qa_pairs[0]["question"], vocab)
