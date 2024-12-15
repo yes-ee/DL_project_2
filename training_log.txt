@@ -1,0 +1,11 @@
+Epoch 1: Validation Accuracy = 0.022
+Epoch 2: Validation Accuracy = 0.026
+Epoch 3: Validation Accuracy = 0.028
+Epoch 4: Validation Accuracy = 0.027
+Epoch 5: Validation Accuracy = 0.026
+Epoch 6: Validation Accuracy = 0.025
+Epoch 7: Validation Accuracy = 0.028
+Epoch 8: Validation Accuracy = 0.025
+Epoch 9: Validation Accuracy = 0.028
+Epoch 10: Validation Accuracy = 0.029
+Test Accuracy: 0.028
