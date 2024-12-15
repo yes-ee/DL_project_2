@@ -1,6 +1,7 @@
 import os
 import json
 from collections import Counter
+from common import sequence
 
 def extract_qa_pairs_with_topic(folder_path):
     all_qa_pairs = []  # 모든 질문-응답 쌍과 주제를 저장할 리스트
@@ -65,9 +66,23 @@ def build_vocab_with_frequency(qa_pairs, min_freq=3, max_vocab_size=20000):
     reverse_vocab = {idx: word for word, idx in vocab.items()}
     return vocab, reverse_vocab
 
-def encode_sentence(sentence, vocab):
-    return [vocab["<SOS>"]] + [vocab[word] for word in sentence.split() if word in vocab] + [vocab["<EOS>"]]
+def preprocess_data(qa_pairs, vocab, max_len):
+    def encode_sentence(sentence, vocab):
+        return [vocab["<SOS>"]] + [vocab[word] for word in sentence.split() if word in vocab] + [vocab["<EOS>"]]
 
+    def pad_or_truncate(seq, max_len, pad_token=0):
+        if len(seq) > max_len:
+            return seq[:max_len]  # 초과 부분 잘라내기
+        return seq + [pad_token] * (max_len - len(seq))  # 패딩 추가
+
+    questions, answers = [], []
+    for pair in qa_pairs:
+        encoded_q = encode_sentence(pair["question"], vocab)
+        encoded_a = encode_sentence(pair["answer"], vocab)
+        # 패딩 처리
+        questions.append(pad_or_truncate(encoded_q, max_len))
+        answers.append(pad_or_truncate(encoded_a, max_len))
+    return questions, answers
 
 # 폴더 내 모든 JSON 파일에서 질문-응답 쌍과 주제 추출
 folder_path = "./train_1_entertainment"  # JSON 파일이 있는 폴더 경로
@@ -85,6 +100,18 @@ print("샘플 데이터:", qa_pairs[:3])  # 일부 샘플 출력
 vocab, reverse_vocab = build_vocab_with_frequency([(item["question"], item["answer"]) for item in qa_pairs])
 print("빈도 기반 단어 사전 크기:", len(vocab))
 
-# 샘플 정수 인코딩
-encoded_sample = encode_sentence(qa_pairs[0]["question"], vocab)
-print("샘플 질문 인코딩:", encoded_sample)
+# 데이터 전처리
+max_len = 50  # 문장 최대 길이
+
+x_data, t_data = preprocess_data(qa_pairs, vocab, max_len)
+print("패딩 처리된 질문 샘플:", x_data[0])
+print("패딩 처리된 응답 샘플:", t_data[0])
+
+# 학습/검증/테스트 데이터셋 분리
+(x_train, t_train), (x_valid, t_valid), (x_test, t_test) = sequence.load_data(
+    x_data, t_data, valid_ratio=0.1, test_ratio=0.1
+)
+
+# 데이터 크기 출력
+total_samples = len(x_data)
+print(f"전체 데이터 크기: {total_samples} / Train 비율: {len(x_train) / total_samples:.2%} / Validation 비율: {len(x_valid) / total_samples:.2%} / Test 비율: {len(x_test) / total_samples:.2%}")
