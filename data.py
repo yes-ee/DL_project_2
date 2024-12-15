@@ -31,11 +31,35 @@ def extract_qa_pairs_with_topic(folder_path):
                             f.write(f"{question}_{answer}\n")
     return all_qa_pairs
 
+def build_vocab(qa_pairs):
+    vocab = {"<PAD>": 0, "<SOS>": 1, "<EOS>": 2}
+    idx = 3
+    for q, a in qa_pairs:
+        for sentence in [q, a]:
+            for word in sentence.split():  # 단어 단위로 처리
+                if word not in vocab:
+                    vocab[word] = idx
+                    idx += 1
+
+    reverse_vocab = {idx: word for word, idx in vocab.items()}
+    return vocab, reverse_vocab
+
+def encode_sentence(sentence, vocab):
+    return [vocab["<SOS>"]] + [vocab[word] for word in sentence.split() if word in vocab] + [vocab["<EOS>"]]
+
 
 # 폴더 내 모든 JSON 파일에서 질문-응답 쌍과 주제 추출
 folder_path = "./train_1_entertainment"  # JSON 파일이 있는 폴더 경로
-qa_pairs_with_topics = extract_qa_pairs_with_topic(folder_path)
+qa_pairs = extract_qa_pairs_with_topic(folder_path)
 
 # 결과 출력
-print(f"총 {len(qa_pairs_with_topics)}개의 질문-응답 쌍을 추출했습니다.")
-print("샘플 데이터:", qa_pairs_with_topics[:3])  # 일부 샘플 출력
+print(f"총 {len(qa_pairs)}개의 질문-응답 쌍을 추출했습니다.")
+print("샘플 데이터:", qa_pairs[:3])  # 일부 샘플 출력
+
+# 단어 사전 생성
+vocab, reverse_vocab = build_vocab([(item["question"], item["answer"]) for item in qa_pairs])
+print("단어 사전 크기:", len(vocab))
+
+# 샘플 정수 인코딩
+encoded_sample = encode_sentence(qa_pairs[0]["question"], vocab)
+print("샘플 질문 인코딩:", encoded_sample)
