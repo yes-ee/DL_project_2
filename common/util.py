@@ -227,12 +227,15 @@ def eval_perplexity(model, corpus, batch_size=10, time_size=35):
 
 def eval_seq2seq_batch(model, questions, corrects, reverse_vocab, batch_size=64, verbos=False, is_reverse=False):
     correct_num = 0
+    pad_id = 0
     total_count = len(questions)
 
     for i in range(0, total_count, batch_size):
         batch_questions = questions[i:i + batch_size]
         batch_corrects = corrects[i:i + batch_size]
 
+        # 정답 데이터에서 <PAD> 제외
+        mask = batch_corrects != pad_id
         correct = batch_corrects[:, 1:]  # 정답 시퀀스에서 <SOS>를 제외
         start_ids = batch_corrects[:, 0]  # 정답 시퀀스의 시작 ID (<SOS>)
         sample_size = correct.shape[1]
@@ -245,7 +248,9 @@ def eval_seq2seq_batch(model, questions, corrects, reverse_vocab, batch_size=64,
         # print("Correct Sequence:", correct)
 
         # 정확도 계산
-        correct_num += np.sum((guesses == correct).all(axis=1))  # 배치 내 정확도 계산
+        correct_masked = (guesses == correct) & mask[:, 1:]  # <PAD> 부분 무시
+        correct_num += np.sum(correct_masked)  # 정확히 맞춘 단어 수
+        total_count += np.sum(mask[:, 1:])  # <PAD>를 제외한 단어 수
 
     accuracy = correct_num / total_count
     return accuracy

@@ -65,49 +65,49 @@ patience = 3
 # # 로그 파일 열기
 log_file = open("training_log.txt", "w")
 print("로그 파일 생성 완료.")
-#
-# for epoch in range(max_epoch):
-#     trainer.fit(x_train, t_train, max_epoch=1,
-#                 batch_size=batch_size, max_grad=max_grad)
-#
-#     # 검증 데이터 정확도 평가
-#     patience_counter = 0
-#     batch_size = 128
-#     # correct_num = 0
-#     #
-#     # for i in range(len(x_test)):
-#     #     question, correct = x_valid[[i]], t_valid[[i]]
-#     #     verbose = i < 10
-#     #     # correct_num += eval_seq2seq(model, question, correct, reverse_vocab)
-#     #
-#     # acc = float(correct_num) / len(x_valid)
-#
-#     acc = eval_seq2seq_batch(model, x_valid, t_valid, reverse_vocab, verbos=False, batch_size=batch_size)
-#     acc_list.append(acc)
-#     print("Acc List:", acc_list)
-#     log_line = f"Epoch {epoch + 1}: Validation Accuracy = {acc:.3f}\n"
-#     log_file.write(log_line)
-#     print('검증 정확도 %.3f%%' % (acc * 100))
-#
-#     # GPU 메모리 해제
-#     cp._default_memory_pool.free_all_blocks()
-#     print("GPU 메모리 해제 완료.")
-#     free_mem, total_mem = cp.cuda.runtime.memGetInfo()
-#     print(f"GPU 메모리 사용량: {total_mem - free_mem:.2f} bytes")
-#
-#     # Early Stopping 체크
-#     if acc > best_acc:
-#         best_acc = acc
-#         patience_counter = 0
-#     else:
-#         patience_counter += 1
-#         if patience_counter >= patience:
-#             log_file.write("Early stopping triggered. Training stopped.\n")
-#             print('Early stopping 발동. 학습 종료.')
-#             break
 
-# model.save_params("seq2seq_model_params.pkl")  # 학습 후 저장
-model.load_params("seq2seq_model_params.pkl")  # 추후 로드
+for epoch in range(max_epoch):
+    trainer.fit(x_train, t_train, max_epoch=1,
+                batch_size=batch_size, max_grad=max_grad)
+
+    # 검증 데이터 정확도 평가
+    patience_counter = 0
+    batch_size = 128
+    # correct_num = 0
+    #
+    # for i in range(len(x_test)):
+    #     question, correct = x_valid[[i]], t_valid[[i]]
+    #     verbose = i < 10
+    #     # correct_num += eval_seq2seq(model, question, correct, reverse_vocab)
+    #
+    # acc = float(correct_num) / len(x_valid)
+
+    acc = eval_seq2seq_batch(model, x_valid, t_valid, reverse_vocab, verbos=False, batch_size=batch_size)
+    acc_list.append(acc)
+    print("Acc List:", acc_list)
+    log_line = f"Epoch {epoch + 1}: Validation Accuracy = {acc:.3f}\n"
+    log_file.write(log_line)
+    print('검증 정확도 %.3f%%' % (acc * 100))
+
+    # GPU 메모리 해제
+    cp._default_memory_pool.free_all_blocks()
+    print("GPU 메모리 해제 완료.")
+    free_mem, total_mem = cp.cuda.runtime.memGetInfo()
+    print(f"GPU 메모리 사용량: {total_mem - free_mem:.2f} bytes")
+
+    # Early Stopping 체크
+    if acc > best_acc:
+        best_acc = acc
+        patience_counter = 0
+    else:
+        patience_counter += 1
+        if patience_counter >= patience:
+            log_file.write("Early stopping triggered. Training stopped.\n")
+            print('Early stopping 발동. 학습 종료.')
+            break
+
+model.save_params("seq2seq_model_params.pkl")  # 학습 후 저장
+# model.load_params("seq2seq_model_params.pkl")  # 추후 로드
 
 # 그래프 그리기
 x = np.arange(len(acc_list)).get()

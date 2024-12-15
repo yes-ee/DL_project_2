@@ -104,6 +104,12 @@ class Decoder:
                 if np.all(end_flags):  # 모든 배치에서 <EOS>가 생성되었으면 종료
                     break
 
+        # <EOS> 이후 단어는 무시하고 <PAD>로 채우기
+        for i in range(batch_size):
+            eos_pos = np.where(sampled[i] == eos_id)[0]
+            if eos_pos.size > 0:
+                eos_index = eos_pos[0]  # 첫 번째 <EOS> 위치 이후를 <PAD>로 채움
+                sampled[i, eos_index + 1:] = 0
 
         return sampled
 
@@ -113,6 +119,7 @@ class Seq2seq(BaseModel):
         self.encoder = Encoder(V, D, H)
         self.decoder = Decoder(V, D, H)
         self.softmax = TimeSoftmaxWithLoss()
+        self.softmax.ignore_label = 0
 
         self.params = self.encoder.params + self.decoder.params
         self.grads = self.encoder.grads + self.decoder.grads
