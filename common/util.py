@@ -225,8 +225,32 @@ def eval_perplexity(model, corpus, batch_size=10, time_size=35):
     ppl = np.exp(total_loss / max_iters)
     return ppl
 
+def eval_seq2seq_batch(model, questions, corrects, reverse_vocab, batch_size=64, verbos=False, is_reverse=False):
+    correct_num = 0
+    total_count = len(questions)
 
-def eval_seq2seq(model, question, correct, id_to_char,
+    for i in range(0, total_count, batch_size):
+        batch_questions = questions[i:i + batch_size]
+        batch_corrects = corrects[i:i + batch_size]
+
+        correct = batch_corrects[:, 1:]  # 정답 시퀀스에서 <SOS>를 제외
+        start_ids = batch_corrects[:, 0]  # 정답 시퀀스의 시작 ID (<SOS>)
+        sample_size = correct.shape[1]
+
+        # 모델로 생성
+        guesses = model.generate(batch_questions, start_ids, sample_size)
+
+        # eval_seq2seq_batch 내부에서 다음 추가
+        # print("Generated Sequence:", guesses)
+        # print("Correct Sequence:", correct)
+
+        # 정확도 계산
+        correct_num += np.sum((guesses == correct).all(axis=1))  # 배치 내 정확도 계산
+
+    accuracy = correct_num / total_count
+    return accuracy
+
+def eval_seq2seq(model, question, correct, reverse_vocab,
                  verbos=False, is_reverse=False):
     correct = correct.flatten()
     # 머릿글자
@@ -234,34 +258,33 @@ def eval_seq2seq(model, question, correct, id_to_char,
     correct = correct[1:]
     guess = model.generate(question, start_id, len(correct))
 
-    # 문자열로 변환
-    question = ''.join([id_to_char[int(c)] for c in question.flatten()])
-    correct = ''.join([id_to_char[int(c)] for c in correct])
-    guess = ''.join([id_to_char[int(c)] for c in guess])
+    # ID를 단어로 변환
+    question_words = [reverse_vocab[int(c)] for c in question.flatten().tolist() if int(c) in reverse_vocab]
+    correct_words = [reverse_vocab[int(c)] for c in correct if int(c) in reverse_vocab]
+    guess_words = [reverse_vocab[int(c)] for c in guess if int(c) in reverse_vocab]
 
     if verbos:
         if is_reverse:
-            question = question[::-1]
+            question_words = question_words[::-1]
 
         colors = {'ok': '\033[92m', 'fail': '\033[91m', 'close': '\033[0m'}
-        print('Q', question)
-        print('T', correct)
+        print('Q:', ' '.join(question_words))  # 질문 출력
+        print('T:', ' '.join(correct_words))   # 정답 출력
 
         is_windows = os.name == 'nt'
-
-        if correct == guess:
+        if correct_words == guess_words:
             mark = colors['ok'] + '☑' + colors['close']
             if is_windows:
                 mark = 'O'
-            print(mark + ' ' + guess)
+            print(mark + ' ' + ' '.join(guess_words))  # 맞춘 경우
         else:
             mark = colors['fail'] + '☒' + colors['close']
             if is_windows:
                 mark = 'X'
-            print(mark + ' ' + guess)
+            print(mark + ' ' + ' '.join(guess_words))  # 틀린 경우
         print('---')
 
-    return 1 if guess == correct else 0
+    return 1 if correct_words == guess_words else 0
 
 
 def analogy(a, b, c, word_to_id, id_to_word, word_matrix, top=5, answer=None):

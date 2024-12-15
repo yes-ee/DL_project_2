@@ -1,8 +1,7 @@
 # coding: utf-8
 import sys
 sys.path.append('..')
-import numpy as np
-
+from common.np import *
 
 id_to_char = {}
 char_to_id = {}
