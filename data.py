@@ -8,13 +8,14 @@ def extract_qa_pairs_with_topic(folder_path):
     for file_name in os.listdir(folder_path):
         if file_name.endswith(".json"):  # JSON 파일만 처리
             file_path = os.path.join(folder_path, file_name)
+            output_txt_path = os.path.join(folder_path, file_name.replace('.json', '.txt'))
             print(f"Processing file: {file_path}")
 
             # JSON 파일 열기
             with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 conversations = data["dataset"]["conversations"]
-
+            with open(output_txt_path, 'w', encoding='utf-8') as f:
                 for convo in conversations:
                     utterances = convo["utterances"]
                     for i in range(len(utterances) - 1):
@@ -27,6 +28,7 @@ def extract_qa_pairs_with_topic(folder_path):
                                 "question": question,
                                 "answer": answer,
                             })
+                            f.write(f"{question}_{answer}\n")
     return all_qa_pairs
 
 
